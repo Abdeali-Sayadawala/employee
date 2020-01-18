@@ -7,6 +7,7 @@ emp = db['employee']
 salarydb = db['salary']
 att = db['attendance']
 hol = db['holidays']
+fun = db['functions']
 
 def validateEmail(email):
     emailregex = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
@@ -231,11 +232,36 @@ class Salary:
                 salary = salperday * count
         print(int(salary))
         
+class Functions:
+    def addFunction(self, date, function, budget):
+        fun.insert_one({"date": date, "function": function, "budget": budget, "profit":0, "loss":0})
+    def showFunctions(self):
+        for i in  fun.find({},{"_id":0}):
+            print("Date: "+str(i['date']))
+            print("Function: "+str(i['function']))
+            print("Budget: "+str(i['budget']))
+    def showPL(self, date):
+        for i in fun.find({"date":date},{"_id":0}):
+            print("Date: "+str(i['date']))
+            print("Function: "+str(i['function']))
+            print("Budget: "+str(i['budget']))
+            print("Profit: "+str(i['profit']))
+            print("Loss: "+str(i["loss"]))
+    def spent(self, date, cost):
+        for i in fun.find({"date":date},{"_id":0}):
+            pl = int(i['budget']) - cost
+            if pl > 0:
+                fun.update_one({'date': date}, {"$set":{"profit": pl}})
+            else:
+                fun.update_one({'date': date}, {"$set": {"loss": pl}})
+            
+        
 while True:
     print("1. Employee Management.")
     print("2. Salary Management.")
     print("3. Attendance Management.")
-    print("4. Exit.")
+    print("4. Function Management.")
+    print("5. Exit.")
     a1 = int(input("Enter your choice: "))
     if a1 == 1:
         e = Employee()
@@ -244,7 +270,7 @@ while True:
         print("3. Display all")
         print("4. Remove")
         print("5. Update")
-        print("6. Exit")
+        print("6. Back")
         a2 = int(input("Enter your choice: "))
         if a2 == 1:
             name = input("Enter Name: ")
@@ -287,22 +313,22 @@ while True:
             eid = input("Enter ID number of employee to update: ")
             e.update_entry(eid)
         if a2 == 6:
-            break
+            continue
     elif a1 == 2:
         s = Salary()
         print("1. Get the current salary of employee.")
-        print("2. Exit.")
+        print("2. Back.")
         a2 = int(input("Enter your choice: "))
         if a2 == 1:
             eid = int(input("Enter ID of employee to get the salary: "))
             s.get_salary(eid)
         elif a2 == 2:
-            break
+            continue
     elif a1 == 3:
         a = Attendance()
         print("1. Mark Attendance")
         print("2. Show Attendance")
-        print("3. Exit")
+        print("3. Back")
         a2 = int(input("Enter your choice: "))
         if a2 == 1:
             eid = int(input("Enter ID of employee: "))
@@ -311,6 +337,48 @@ while True:
         elif a2 == 2:
             a.show_all_attendance()
         elif a2 == 3:
-            break
+            continue
     elif a1 == 4:
+        f = Functions()
+        print("1. Add Function.")
+        print("2. Show Functions. ")
+        print("3. Show Profit/Loss. ")
+        print("4. Enter Cost")
+        print("5. Back")
+        a2 = int(input("Enter your choice: "))
+        if a2 == 1:
+            valid = 0
+            while valid == 0:
+                date = input("Date(dd/mm/yyyy): ")
+                if validateDate(dob):
+                    valid = 1
+                else:
+                    print("Invalid Date format.!")
+            function = input("Enter Function Name: ")
+            cost = int(input("Enter Budget: "))
+            f.addFunction(date, function, cost)
+        elif a2 == 2:
+            f.showFunctions()
+        elif a2 == 3:
+            valid = 0
+            while valid == 0:
+                date = input("Enter Date(dd/mm/yyyy): ")
+                if validateDate(dob):
+                    valid = 1
+                else:
+                    print("Invalid Date format.!")
+            f.showPL(date)
+        elif a2 == 4:
+            valid = 0
+            while valid == 0:
+                date = input("Date (dd/mm/yyyy): ")
+                if validateDate(dob):
+                    valid = 1
+                else:
+                    print("Invalid Date format.!")
+            cost = int(input("Enter Cost of Function: "))
+            f.spent(date, cost)
+        elif a2 == 5:
+            continue
+    elif a1 == 5:
         break
