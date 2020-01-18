@@ -170,10 +170,8 @@ class Salary:
             if i["Holiday"] != 0:
                 holidays.append(int(i["Day"]))
         for i in self.att.find({"eid":eid},{"_id":0, "eid":0}).limit(dt):
-#            print(i)
             if int(i['present']) == 1 or int(i["date"][:2]) in holidays:
                 count = count + 1
-#        print(count)
         for i in self.col.find({"eid":eid},{"_id":0, "eid":0, "date":0}):
             sal = int(i["Salary"])
         if int(month) in [4, 6, 9, 11]:
@@ -258,6 +256,3 @@ while True:
             break
     elif a1 == 4:
         break
-            
-
-
