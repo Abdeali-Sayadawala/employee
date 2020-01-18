@@ -2,105 +2,135 @@ import pymongo
 import datetime
 import re
 client = pymongo.MongoClient("mongodb://localhost:27017")
+db = client['company']
+emp = db['employee']
+salarydb = db['salary']
+att = db['attendance']
+hol = db['holidays']
 
+def validateEmail(email):
+    emailregex = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
+    if (re.search(emailregex, email)):
+        return True
+    else:
+        return False
+def emailExists(email):
+    for i in emp.find():
+        if i["email"] == email and i["deleted"] == False:
+            return False
+        else:
+            return True
+
+def validateMobile(mobile):
+    try:
+        if len(mobile) == 10:
+            number = int(mobile)
+            return True
+        else:
+            return False
+    except Exception:
+        return False
+    
+def validateDate(date):
+    datesplit = date.split('/')
+    if len(datesplit) != 3:
+        return False
+    if len(datesplit[0]) == 2 and len(datesplit[1]) == 2 and len(datesplit[2]) == 4:
+        if datesplit[1] in [1,3,5,7,8,10,12] and datesplit[0] > 31:
+            return False
+        elif datesplit[1] in [4,6,9,11] and datesplit[0] > 30:
+            return False
+        elif datesplit[1] == 2 and datesplit[0] > 28:
+            return False
+        else:
+            return True
+    else:
+        return False
+        
 
 class Employee:
-    db = client["company"]
-    col = db["employee"]
-    sal = db["salary"]
-    att = db["attendance"]
     def add_employee(self, name, address, status, Dateofbirth, email, mobile):
         i = None
-        for x in self.col.find():
+        for x in emp.find():
             i = x
             eid = x["eid"]
-        for i in self.col.find():
-            if i["email"] == email and i["Deleted"] == False:
-                print("E-mail already Exists.")
-                return 0
-        emailregex = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
-        if (re.search(emailregex, email)):
-            pass
-        else:
-            print("Email Invalid.")
-            return 0
         if i == None:
             eid = 1
         else:
-            data = self.col.find().sort("eid",-1).limit(1)
+            data = emp.find().sort("eid",-1).limit(1)
             for i in data:
                 eid = i["eid"]
                 eid = eid + 1
-        dict = {"eid":eid,"Name":name, "Address":address, "Status":status, "DateofBirth":Dateofbirth, "email":email, "Mobile":mobile, "Deleted": False}
-        self.col.insert_one(dict)
+        dict = {"eid":eid,"name":name, "address":address, "status":status, "dob":Dateofbirth, "email":email, "mobile":mobile, "deleted": False}
+        emp.insert_one(dict)
         print("Id of "+str(name)+" is "+str(eid))
         if status == "intern":
-            self.sal.insert_one({"eid":eid, "Salary": 7000, "date": datetime.date.today().strftime("%d/%m/%Y")})
+            salarydb.insert_one({"eid":eid, "salary": 7000, "date": datetime.date.today().strftime("%d/%m/%Y")})
         elif status == "GOD":
-            self.sal.insert_one({"eid":eid, "Salary": 700000, "date": datetime.date.today().strftime("%d/%m/%Y")})
+            salarydb.insert_one({"eid":eid, "salary": 700000, "date": datetime.date.today().strftime("%d/%m/%Y")})
         elif status == "experienced":
-            self.sal.insert_one({"eid":eid, "Salary": 25000, "date": datetime.date.today().strftime("%d/%m/%Y")})
+            salarydb.insert_one({"eid":eid, "salary": 25000, "date": datetime.date.today().strftime("%d/%m/%Y")})
             
     def display_all(self):
         data = None
-        for x in self.col.find({}, {"_id":0}):
+        for x in emp.find({}, {"_id":0}):
             data = x
         if data == None:
             print("Id not present.")
             return 0
-        data = self.col.find({}, {"_id":0, "Address":0, "DateofBirth":0, "Mobile":0})
+        data = emp.find({}, {"_id":0, "Address":0, "DateofBirth":0, "Mobile":0})
         for i in data:
             if i["Deleted"] == True:
                 continue
             print("Employee ID: ", i["eid"])
-            print("Name: ", i["Name"])
-            print("Status: ", i["Status"])
+            print("Name: ", i["name"])
+            print("Status: ", i["status"])
             print("E-mail: ", i["email"])
             print("="*40)
 
     def display_details(self, eid):
         data = None
-        for x in self.col.find({"eid": int(eid)}, {"_id":0}):
+        for x in emp.find({"eid": int(eid)}, {"_id":0}):
             data = x
-        if data == None:
+        if data == None: 
             print("Id not present.")
             return 0
-        data = self.col.find({"eid": int(eid)}, {"_id":0})
+        data = emp.find({"eid": int(eid)}, {"_id":0})
         for i in data:
-            if i["Deleted"] == True:
+            if i["deleted"] == True:
                 print("ID deleted.")
                 break
             print("Employee ID: ", i["eid"])
-            print("Name: ", i["Name"])
-            print("Address: ", i["Address"])
-            print("Status: ", i["Status"])
-            print("DateofBirth: ", i["DateofBirth"])
+            print("Name: ", i["name"])
+            print("Address: ", i["address"])
+            print("Status: ", i["status"])
+            print("DateofBirth: ", i["dob"])
             print("E-mail: ", i["email"])
-            print("Mobile", i["Mobile"])
+            print("Mobile", i["mobile"])
             print("="*40)
 
     def remove_entry(self, eid):
         data = None
-        for x in self.col.find({"eid": int(eid)}, {"_id":0}):
+        for x in emp.find({"eid": int(eid)}, {"_id":0}):
             data = x
         if data == None:
             print("Id not present.")
             return 0
-        for i in self.col.find({"eid": int(eid)}, {"_id":0}):
-            if i["Deleted"] == True:
+        for i in emp.find({"eid": int(eid)}, {"_id":0}):
+            if i["deleted"] == True:
                 print("ID already deleted.")
                 return 0
-        self.col.update_one({"eid": int(eid)},{"$set": {"Deleted": True}})
+        emp.update_one({"eid": int(eid)},{"$set": {"deleted": True}})
         print(str(eid)+" removed")
 
     def update_entry(self, eid):
         data = None
-        for x in self.col.find({"eid": int(eid)}, {"_id":0}):
+        for x in emp.find({"eid": int(eid)}, {"_id":0}):
             data = x
         if data == None:
             print("Id not present.")
             return 0
-        for i in self.col.find({"eid": int(eid)}, {"_id":0}):
+        for i in emp.find({"eid": int(eid)}, {"_id":0}):
             if i["Deleted"] == True:
                 print("ID already deleted.")
                 return 0
@@ -109,71 +139,78 @@ class Employee:
         name = input("Name: ")
         address = input("Address: ")
         status = input("Status: ")
-        dob = input("Date of Birth: ")
-        email = input("Email: ")
-        mobile = input("Mobile: ")
+        valid = 0
+        while valid == 0:
+            dob = input("Date of Birth(dd/mm/yyyy): ")
+            if validateDate(dob):
+                valid = 1
+            else:
+                print("Invalid Date format.!")
+        valid = 0
+        while valid == 0:
+            email = input("E-mail: ")
+            if validateEmail(email):
+                if emailExists(email):
+                    valid = 1
+                else:
+                    print("Email already exists try another!.")
+            else:
+                print("Email Invalid. Please Enter Again!.")
+        valid = 0
+        while valid == 0:
+            mobile = input("Number: ")
+            if validateMobile(mobile):
+                valid = 1
+            else:
+                print("Ivalid Mobile Number.!")
         emailregex = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
         if (re.search(emailregex, email)) == False:
             print("Invalid Email")
             return 0
         query = {"eid": int(eid)}
-        execute = {"$set": {"Name":name, "Address":address, "Status":status, "DateofBirth":dob, "email":email, "Mobile":mobile}}
-        self.col.update_one(query, execute)
+        execute = {"$set": {"name":name, "address":address, "status":status, "dob":dob, "email":email, "mobile":mobile}}
+        emp.update_one(query, execute)
         if status == "intern":
-            self.sal.update_one({"eid":int(eid)}, {"$set" : {"eid":int(eid), "Salary": 7000, "date": datetime.date.today().strftime("%d/%m/%Y")}})
+            salarydb.update_one({"eid":int(eid)}, {"$set" : {"eid":int(eid), "salary": 7000, "date": datetime.date.today().strftime("%d/%m/%Y")}})
         elif status == "GOD":
-            self.sal.update_one({"eid":int(eid)}, {"$set" : {"eid":int(eid), "Salary": 700000, "date": datetime.date.today().strftime("%d/%m/%Y")}})
+            salarydb.update_one({"eid":int(eid)}, {"$set" : {"eid":int(eid), "salary": 700000, "date": datetime.date.today().strftime("%d/%m/%Y")}})
         elif status == "experienced":
-            self.sal.update_one({"eid":int(eid)}, {"$set" : {"eid":int(eid), "Salary": 25000, "date": datetime.date.today().strftime("%d/%m/%Y")}})
+            salarydb.update_one({"eid":int(eid)}, {"$set" : {"eid":int(eid), "salary": 25000, "date": datetime.date.today().strftime("%d/%m/%Y")}})
         self.display_details(eid)
 
 class Attendance:
-    db = client["company"]
-    col = db["attendance"]
-    emp = db["employee"]
     def mark_attendance(self, eid, present):
-        for i in self.col.find({"eid": int(eid)}, {"_id":0}):
-            if i["Deleted"] == True:
+        for i in att.find({"eid": int(eid)}, {"_id":0}):
+            if i["deleted"] == True:
                 print("ID deleted.")
                 return 0
-        self.col.insert_one({"eid":eid, "present":present, "date":datetime.date.today().strftime("%d/%m/%Y")})
+        att.insert_one({"eid":eid, "present":present, "date":datetime.date.today().strftime("%d/%m/%Y")})
     def show_all_attendance(self):
-        for i in self.emp.find():
-            if i["Deleted"] == True:
+        for i in emp.find():
+            if i["deleted"] == True:
                 continue
-            print(i["Name"])
-            for j in self.col.find({"eid":i["eid"]},{"_id":0}):
+            print(i["name"])
+            for j in att.find({"eid":i["eid"]},{"_id":0}):
                 print(str(j["date"])+"----"+str(j["present"]))
 
-class Salary:
-    db = client["company"]
-    col = db["salary"]
-    emp = db["employee"]
-    hol = db["holidays"]
-    att = db["attendance"]   
-    def add_salary(self, eid, amount):
-        for i in self.emp.find({"eid": int(eid)}, {"_id":0}):
-            if i["Deleted"] == True:
-                print("ID deleted.")
-                return 0
-        self.col.insert_one({"eid":eid, "Salary": amount, "date": datetime.date.today().strftime("%d/%m/%Y")})
+class Salary: 
     def get_salary(self, eid, date = int(datetime.date.today().strftime("%d")), month = int(datetime.date.today().strftime("%m")), year = int(datetime.date.today().strftime("%Y"))):
         count = 0
         holidays = []
-        for i in self.emp.find({"eid": int(eid)}, {"_id":0}):
-            if i["Deleted"] == True:
+        for i in emp.find({"eid": int(eid)}, {"_id":0}):
+            if i["deleted"] == True:
                 print("ID deleted.")
                 return 0
-        for i in self.col.find({"eid":eid},{"_id":0, "eid":0, "salary":0}).sort("_id",-1).limit(1):
+        for i in salarydb.find({"eid":eid},{"_id":0, "eid":0, "salary":0}).sort("_id",-1).limit(1):
             dt = int(i['date'][:2])
-        for i in self.hol.find({"Month":int(datetime.date.today().strftime("%m"))}, {"_id":0}):
+        for i in hol.find({"Month":int(datetime.date.today().strftime("%m"))}, {"_id":0}):
             if i["Holiday"] != 0:
                 holidays.append(int(i["Day"]))
-        for i in self.att.find({"eid":eid},{"_id":0, "eid":0}).limit(dt):
+        for i in att.find({"eid":eid},{"_id":0, "eid":0}).limit(dt):
             if int(i['present']) == 1 or int(i["date"][:2]) in holidays:
                 count = count + 1
-        for i in self.col.find({"eid":eid},{"_id":0, "eid":0, "date":0}):
-            sal = int(i["Salary"])
+        for i in salarydb.find({"eid":eid},{"_id":0, "eid":0, "date":0}):
+            sal = int(i["salary"])
         if int(month) in [4, 6, 9, 11]:
             if count == 30:
                 salary = sal
@@ -212,10 +249,31 @@ while True:
         if a2 == 1:
             name = input("Enter Name: ")
             address = input("Enter Address ")
-            dob = input("Date of Birth(dd/mm/yyyy): ")
-            status = input("Enter Status: ")
-            mobile = input("Enter mobile number: ")
-            email = input("Enter your mail: ")
+            valid = 0
+            while valid == 0:
+                dob = input("Date of Birth(dd/mm/yyyy): ")
+                if validateDate(dob):
+                    valid = 1
+                else:
+                    print("Invalid Date format.!")
+            status = input("Enter Status (intern/experienced/GOD): ")
+            valid = 0
+            while valid == 0:
+                mobile = input("Enter mobile number: ")
+                if validateMobile(mobile):
+                    valid = 1
+                else:
+                    print("Ivalid Mobile Number.!")
+            valid = 0
+            while valid == 0:
+                email = input("Enter your mail: ")
+                if validateEmail(email):
+                    if emailExists(email):
+                        valid = 1
+                    else:
+                        print("Email already exists try another!.")
+                else:
+                    print("Email Invalid. Please Enter Again!.")
             e.add_employee(name, address, status, dob, email, mobile)
         if a2 == 2:
             eid = input("Enter Id number of the employee: ")
@@ -248,7 +306,7 @@ while True:
         a2 = int(input("Enter your choice: "))
         if a2 == 1:
             eid = int(input("Enter ID of employee: "))
-            present = int(input("Enter status: "))
+            present = int(input("Enter status (1->Present/0->Absent): "))
             a.mark_attendance(eid, present)
         elif a2 == 2:
             a.show_all_attendance()
