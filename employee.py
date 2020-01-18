@@ -166,7 +166,7 @@ class Salary:
                 return 0
         for i in self.col.find({"eid":eid},{"_id":0, "eid":0, "salary":0}).sort("_id",-1).limit(1):
             dt = int(i['date'][:2])
-        for i in hol.find({"Month":int(datetime.date.today().strftime("%m"))}, {"_id":0}):
+        for i in self.hol.find({"Month":int(datetime.date.today().strftime("%m"))}, {"_id":0}):
             if i["Holiday"] != 0:
                 holidays.append(int(i["Day"]))
         for i in self.att.find({"eid":eid},{"_id":0, "eid":0}).limit(dt):
